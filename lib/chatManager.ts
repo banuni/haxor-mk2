@@ -1,80 +1,76 @@
-import { dbManager } from './database'
+import { db } from "../db";
+import { messages, type Message } from "../db/schema";
+import { eq, isNull } from "drizzle-orm";
+import { nanoid } from "nanoid";
 
 interface User {
-  id: string | number
-  username: string
-  joinedAt: Date
-}
-
-interface Message {
-  id: number
-  user_id: string | number
-  username: string
-  text: string
-  timestamp: string
+  id: string;
+  username: string;
 }
 
 class ChatManager {
-  private activeUsers = new Map<string | number, User>()
+  private activeUsers = new Map<string, User>();
 
-  addUser(userId: string | number, username: string): User {
+  addUser(userId: string, username: string): User {
     const user: User = {
       id: userId,
       username,
-      joinedAt: new Date()
-    }
-    
-    this.activeUsers.set(userId, user)
-    console.log(`👋 User joined: ${username}`)
-    return user
+    };
+
+    this.activeUsers.set(userId, user);
+    console.log(`👋 User joined: ${username}`);
+    return user;
   }
 
-  removeUser(userId: string | number): User | null {
-    const user = this.activeUsers.get(userId)
+  removeUser(userId: string): User | null {
+    const user = this.activeUsers.get(userId);
     if (user) {
-      this.activeUsers.delete(userId)
-      console.log(`👋 User left: ${user.username}`)
+      this.activeUsers.delete(userId);
+      console.log(`👋 User left: ${user.username}`);
     }
-    return user || null
+    return user || null;
   }
 
-  getUser(userId: string | number): User | null {
-    return this.activeUsers.get(userId) || null
+  getUser(userId: string): User | null {
+    return this.activeUsers.get(userId) || null;
   }
 
   getActiveUsers(): User[] {
-    return Array.from(this.activeUsers.values())
+    return Array.from(this.activeUsers.values());
   }
 
-  addMessage(userId: string | number, text: string): Message | null {
-    const user = this.activeUsers.get(userId)
-    if (!user) return null
+  async addMessage(userId: string, content: string): Promise<Message | null> {
+    const user = this.activeUsers.get(userId);
+    if (!user) return null;
 
-    const db = dbManager.getDb()
-    const stmt = db.prepare(`
-      INSERT INTO messages (user_id, username, text)
-      VALUES (?, ?, ?)
-    `)
-    
-    const result = stmt.run(userId, user.username, text)
-    
-    const message = db.prepare('SELECT * FROM messages WHERE id = ?')
-      .get(result.lastInsertRowid) as Message
-    
-    console.log(`💬 Message from ${user.username}: ${text}`)
-    return message
+    const [message] = await db
+      .insert(messages)
+      .values({
+        id: nanoid(),
+        fromName: user.username,
+        fromRole: "user",
+        content,
+      })
+      .returning();
+
+    console.log(`💬 Message from ${user.username}: ${content}`);
+    return message;
   }
 
-  getRecentMessages(limit = 50): Message[] {
-    const db = dbManager.getDb()
-    const stmt = db.prepare(`
-      SELECT * FROM messages 
-      ORDER BY timestamp DESC 
-      LIMIT ?
-    `)
-    
-    return (stmt.all(limit) as Message[]).reverse()
+  async getRecentMessages(limit = 50): Promise<Message[]> {
+    return await db
+      .select()
+      .from(messages)
+      .orderBy(messages.createdAt)
+      .limit(limit);
+  }
+
+  async clearMessages(): Promise<void> {
+    await db
+      .update(messages)
+      .set({ clearedAt: new Date() })
+      .where(isNull(messages.clearedAt));
   }
 }
 
-export const chatManager = new ChatManager() 
+export const chatManager = new ChatManager();

@@ -1,20 +1,21 @@
 // import { clearAllMessages, useMessages } from '../api/messages';
 // import { useTasks } from '../api/tasks';
 // import { MasterTaskCard } from '../components/MasterTask';
-import { useState } from 'react';
-import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
-import { Dialog } from "../components/ui/dialog"
-import { SimpleConfirmButton } from '../components/ui/simple-confirm-button';
-import { toast } from 'sonner';
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog } from "@/components/ui/dialog";
+import { SimpleConfirmButton } from "@/components/ui/simple-confirm-button";
+import { toast } from "sonner";
 // import { buildMessagesString } from '../lib/build-messages-string';
-import copy from 'copy-to-clipboard';
-// import { UserSettingsModal } from '../components/UserSettingsModal';
+import copy from "copy-to-clipboard";
+// import { UserSettingsModal } from "@/components/UserSettingsModal";
 // import { useSessionData } from '../api/sessionData';
+import { useChat } from "@/lib/useChat";
 
 export function MasterPage() {
-  // const { messages, addMessage } = useMessages();
-  // const [fromEditable, setFromEditable] = useState(false);
+  const { messages, sendMessage, joinChat, isConnected } = useChat();
+  const [fromEditable, setFromEditable] = useState(false);
   // const { getSessionDataQuery, setUserNameMutation, setSystemLevelMutation } = useSessionData({
   //   onUserNameChange: (newName) =>
   //     addMessage({
@@ -28,24 +29,22 @@ export function MasterPage() {
   //     }
   //   },
   // });
-  // const username = getSessionDataQuery.data?.username ?? '...';
-  // const [systemLevel, setSystemLevel] = useState<'basic' | 'pro' | 'premium'>('basic');
-  // const [from, setFrom] = useState('System');
+  const [systemLevel, setSystemLevel] = useState<"basic" | "pro" | "premium">(
+    "basic"
+  );
+  const [from, setFrom] = useState("System");
   // const { tasks } = useTasks({ showAborted: true });
 
   const handleEnterClick = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      addMessage({
-        fromName: from,
-        fromRole: 'master',
-        content: e.currentTarget.value,
-      });
-      e.currentTarget.value = '';
+    if (e.key === "Enter") {
+      sendMessage(e.currentTarget.value);
+      e.currentTarget.value = "";
     }
   };
   const onCopyAll = () => {
-    copy(buildMessagesString(messages));
-    toast.success('Copied {} clipboard');
+    // copy(buildMessagesString(messages));
+    joinChat("Nunizz");
+    toast.success("Copied {} clipboard");
   };
   return (
     <div className="bg-blue-900 flex h-[100vh] text-white gap-5 w-full">
@@ -53,16 +52,18 @@ export function MasterPage() {
         <div className="text-2xl bg-black p-2 flex justify-between">
           <div>Chat</div>
           <div className="flex gap-2">
-            <Button onClick={onCopyAll}>Copy All</Button>
-            <SimpleConfirmButton onConfirm={clearAllMessages}>
+            <Button onClick={onCopyAll}>
+              join chat ({isConnected ? "connected" : "disconnected"})
+            </Button>
+            {/* <SimpleConfirmButton onConfirm={clearAllMessages}>
               Clear All
-            </SimpleConfirmButton>
-            <UserSettingsModal
+            </SimpleConfirmButton> */}
+            {/* <UserSettingsModal
               username={username}
               setUsername={setUserNameMutation}
               systemLevel={systemLevel}
               setSystemLevel={setSystemLevelMutation}
-            />
+            /> */}
           </div>
         </div>
         <div className="flex flex-col grow bg-eggplant-100">
@@ -93,11 +94,11 @@ export function MasterPage() {
           />
         </div>
       </div>
-      <div className="flex flex-col gap-2 border-red-900 border-2 rounded p-2">
+      {/* <div className="flex flex-col gap-2 border-red-900 border-2 rounded p-2">
         {tasks?.map((task) => (
           <MasterTaskCard task={task} />
         ))}
-      </div>
+      </div> */}
     </div>
   );
 }

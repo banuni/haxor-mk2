@@ -179,4 +179,4 @@ class TaskManager {
   }
 }
 
-export const taskManager = new TaskManager() 
+export const taskManager = {}//new TaskManager() 

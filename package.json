@@ -5,7 +5,9 @@
     "dev": "bun --watch server.ts",
     "start": "bun server.ts",
     "build": "bun build server.ts --outdir ./dist && bun build ./client/frontend.tsx --outdir ./dist/client",
-    "setup": "mkdir -p data public && echo 'Setup complete!'"
+    "setup": "mkdir -p data public && echo 'Setup complete!'",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "bun db/migrate.ts"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -14,14 +16,17 @@
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-switch": "^1.2.5",
+    "@tanstack/react-query": "^5.77.0",
     "@tanstack/react-router": "^1.120.10",
     "@tanstack/router-devtools": "^1.120.10",
     "bun-plugin-tailwind": "^0.0.15",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "copy-to-clipboard": "^3.3.3",
+    "drizzle-orm": "^0.43.1",
     "hono": "^3.12.0",
     "lucide-react": "^0.511.0",
+    "nanoid": "^5.1.5",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "sonner": "^2.0.3",
@@ -33,6 +38,7 @@
     "@types/react-dom": "^19.1.5",
     "autoprefixer": "^10.4.21",
     "bun-types": "latest",
+    "drizzle-kit": "^0.31.1",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.7",
     "tailwindcss-animate": "^1.0.7"
