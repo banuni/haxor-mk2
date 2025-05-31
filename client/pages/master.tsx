@@ -1,6 +1,4 @@
 // import { clearAllMessages, useMessages } from '../api/messages';
-// import { useTasks } from '../api/tasks';
-// import { MasterTaskCard } from '../components/MasterTask';
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +10,8 @@ import copy from "copy-to-clipboard";
 // import { UserSettingsModal } from "@/components/UserSettingsModal";
 // import { useSessionData } from '../api/sessionData';
 import { useChat } from "@/lib/useChat";
+import { useTasksList } from "@/api/tasks";
+import { MasterTaskCard } from "@/components/MasterTask";
 
 export function MasterPage() {
   const { messages, sendMessage, joinChat, isConnected } = useChat();
@@ -33,7 +33,7 @@ export function MasterPage() {
     "basic"
   );
   const [from, setFrom] = useState("System");
-  // const { tasks } = useTasks({ showAborted: true });
+  const tasks = useTasksList({ showAborted: true });
 
   const handleEnterClick = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -94,11 +94,11 @@ export function MasterPage() {
           />
         </div>
       </div>
-      {/* <div className="flex flex-col gap-2 border-red-900 border-2 rounded p-2">
-        {tasks?.map((task) => (
+      <div className="flex flex-col gap-2 border-red-900 border-2 rounded p-2">
+        {tasks.tasks?.map((task) => (
           <MasterTaskCard task={task} />
         ))}
-      </div> */}
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Message } from "../api/messages";
+import { type Message } from "db/schema";
 
 // Define all possible event types
 export type WebSocketEvent =

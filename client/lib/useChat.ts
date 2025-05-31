@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useWebSocket } from "./useWebSocket";
-import type { Message } from "../api/messages";
+import type { Message } from "db/schema";
 
 interface ChatUser {
   id: string;
@@ -58,11 +58,16 @@ export function useChat(): UseChatReturn {
   // Handle user joined/left events
   useEffect(() => {
     const unsubUserJoined = on("user_joined", (data) => {
-      setActiveUsers((prev) => [...prev, { id: data.username, username: data.username }]);
+      setActiveUsers((prev) => [
+        ...prev,
+        { id: data.username, username: data.username },
+      ]);
     });
 
     const unsubUserLeft = on("user_left", (data) => {
-      setActiveUsers((prev) => prev.filter(user => user.username !== data.username));
+      setActiveUsers((prev) =>
+        prev.filter((user) => user.username !== data.username)
+      );
     });
 
     return () => {

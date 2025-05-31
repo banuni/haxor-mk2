@@ -10,11 +10,16 @@ import { createRoot } from "react-dom/client";
 import { StrictMode } from "react";
 import { RouterProvider } from '@tanstack/react-router'
 import { router } from './router'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+const queryClient = new QueryClient()
 
 const elem = document.getElementById("root")!;
 const app = (
   <StrictMode>
-    <RouterProvider router={router} />
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   </StrictMode>
 );
 
