@@ -51,7 +51,8 @@ function broadcastToAll(event: string, data: any) {
 // Start the server with WebSocket support
 const server = Bun.serve({
   routes: {
-    "/*": index,
+    "/player": index,
+    "/master": index,
   },
   port: process.env.PORT || 3000,
   fetch(req, server) {
