@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { NewTask, type Task } from "db/schema";
 import { getAnalysisMessage } from "content/messageTemplates";
 
@@ -38,8 +38,34 @@ const deleteTask = async (taskId: string) => {
   return res.json();
 };
 
+const archiveTask = async (taskId: string) => {
+  const res = await fetch(`/api/tasks/${taskId}/archive`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to archive task");
+  return res.json();
+};
+
+const abortTask = async (taskId: string) => {
+  const res = await fetch(`/api/tasks/${taskId}/abort`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to abort task");
+  return res.json();
+};
+
+const startTask = async (taskId: string) => {
+  const res = await fetch(`/api/tasks/${taskId}/start`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to start task");
+  return res.json();
+};
+
 export const useCreateTask = () => {
+  const queryClient = useQueryClient();
   const { mutate, isPending, error } = useMutation({
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasks"] }),
     mutationFn: (
       task: Pick<NewTask, "targetName" | "algorithmName" | "goal">
     ) =>
@@ -67,22 +93,57 @@ export const useTasksList = ({ showAborted }: { showAborted: boolean }) => {
 };
 
 export const useTaskActions = () => {
-  const { mutate, isPending, error } = useMutation({
+  const queryClient = useQueryClient();
+
+  const {
+    mutate: updateTask,
+    isPending: isUpdating,
+    error: updateError,
+  } = useMutation({
     mutationFn: (task: Partial<Task> & { id: string }) => putTask(task),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
   });
-  const archiveTask = (taskId: string) =>
-    mutate({ id: taskId, archivedAt: new Date() });
 
-  const startTask = (taskId: string) =>
-    mutate({ id: taskId, status: "in-progress" });
+  const {
+    mutate: archiveTaskMutation,
+    isPending: isArchiving,
+    error: archiveError,
+  } = useMutation({
+    mutationFn: archiveTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
 
-  const abortTask = (taskId: string) =>
-    mutate({ id: taskId, status: "aborted" });
+  const {
+    mutate: abortTaskMutation,
+    isPending: isAborting,
+    error: abortError,
+  } = useMutation({
+    mutationFn: abortTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
+
+  const {
+    mutate: startTaskMutation,
+    isPending: isStarting,
+    error: startError,
+  } = useMutation({
+    mutationFn: startTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
 
   const completeTask = (taskId: string) =>
-    mutate({ id: taskId, status: "success" });
+    updateTask({ id: taskId, status: "success" });
 
-  const failTask = (taskId: string) => mutate({ id: taskId, status: "fail" });
+  const failTask = (taskId: string) =>
+    updateTask({ id: taskId, status: "fail" });
 
   const resolveTaskAnalysis = (
     taskId: string,
@@ -91,7 +152,7 @@ export const useTaskActions = () => {
       probability,
     }: { secondsToComplete: number; probability: number }
   ) =>
-    mutate({
+    updateTask({
       id: taskId,
       status: "pending",
       estimatedSecondsToComplete: secondsToComplete,
@@ -99,11 +160,13 @@ export const useTaskActions = () => {
     });
 
   return {
-    archiveTask,
-    startTask,
-    abortTask,
+    archiveTask: archiveTaskMutation,
+    startTask: startTaskMutation,
+    abortTask: abortTaskMutation,
     completeTask,
     failTask,
     resolveTaskAnalysis,
+    isPending: isUpdating || isArchiving || isAborting || isStarting,
+    error: updateError || archiveError || abortError || startError,
   };
 };

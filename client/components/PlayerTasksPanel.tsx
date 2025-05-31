@@ -51,14 +51,14 @@ function TaskCard({ task }: { task: Task }) {
         <Button
           onClick={handleStartTask}
           disabled={status !== "pending"}
-          className={buttonStyle}
+          className="border-white border text-white hover:bg-white/10"
         >
           Hack
         </Button>
         <Button
           onClick={handleAbortTask}
           disabled={status !== "pending" && status !== "analyzing"}
-          className={buttonStyle}
+          className="border-white border text-white hover:bg-white/10"
         >
           Abort
         </Button>
@@ -66,9 +66,6 @@ function TaskCard({ task }: { task: Task }) {
     </div>
   );
 }
-
-const buttonStyle =
-  "bg-black border border-white rounded-md p-2 text-white cursor-pointer";
 
 export function TasksPanel({
   tasks,
@@ -83,7 +80,7 @@ export function TasksPanel({
       <div className="flex flex-col gap-2">
         {tasks.map((task) => (
           <div key={task.id} className="flex gap-2">
-            <TaskCard task={task} user={username} />
+            <TaskCard task={task} />
           </div>
         ))}
       </div>

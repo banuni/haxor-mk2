@@ -4,6 +4,7 @@ import { TasksPanel } from "../components/PlayerTasksPanel";
 import { Textarea } from "../components/ui/textarea";
 import { StealthButton } from "../components/StealthButton";
 import { useChat } from "../lib/useChat";
+import { Button } from "@/components/ui/button";
 
 export const PlayerPage = () => {
   const { messages, sendMessage, joinChat, isConnected } = useChat();
@@ -131,19 +132,16 @@ export const PlayerPage = () => {
             <option value="gamma">Gamma</option>
             <option value="delta">Delta</option>
           </select>
-          <button
-            className="rounded-md p-2 bg-black cursor-pointer border-[#00ff00] border-2"
+          <Button
+            className="rounded-md p-2 bg-black border-[#00ff00] border-2"
             onClick={onCheckClick}
           >
             Send to Analysis
-          </button>
+          </Button>
 
-          <button
-            className="rounded-md p-2 bg-black cursor-pointer"
-            onClick={onSupportClick}
-          >
+          <Button className="rounded-md p-2 bg-black " onClick={onSupportClick}>
             SUPPORT
-          </button>
+          </Button>
         </div>
         <div className="flex gap-2 p-4">
           <StealthButton />
