@@ -5,8 +5,10 @@ export type WebSocketEvent =
   | "initial_data"
   | "user_joined"
   | "user_left"
+  | "user_updated"
   | "new_message"
-  | "error";
+  | "error"
+  | "messages_cleared";
 
 // Define payload types for each event
 export interface WebSocketPayloads {
@@ -16,15 +18,27 @@ export interface WebSocketPayloads {
   };
   user_joined: {
     username: string;
+    userId: string;
     message: string;
   };
   user_left: {
     username: string;
+    userId: string;
+    message: string;
+  };
+  user_updated: {
+    userId: string;
+    oldUsername: string;
+    newUsername: string;
     message: string;
   };
   new_message: Message;
   error: {
     message: string;
+  };
+  messages_cleared: {
+    message: string;
+    messages: Message[];
   };
 }
 
@@ -35,15 +49,22 @@ export interface WebSocketMessage<T extends WebSocketEvent> {
 }
 
 // Define client events that can be sent
-export type ClientEvent = "join_chat" | "send_message";
+export type ClientEvent = "join_chat" | "send_message" | "clear_messages" | "update_username";
 
 // Define payload types for client events
 export interface ClientPayloads {
   join_chat: {
     username: string;
+    userId: string;
   };
   send_message: {
     text: string;
+    userId: string;
+  };
+  clear_messages: {};
+  update_username: {
+    newUsername: string;
+    userId: string;
   };
 }
 
@@ -54,23 +75,28 @@ export class WebSocketClient {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectTimeout: NodeJS.Timeout | null = null;
+  private userId: string | null = null;
 
   constructor(private url: string) {
-    console.log('WebSocket client initialized with URL:', url);
+    console.log("WebSocket client initialized with URL:", url);
+  }
+
+  setUserId(userId: string) {
+    this.userId = userId;
   }
 
   connect() {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      console.log('WebSocket already connected');
+      console.log("WebSocket already connected");
       return;
     }
 
     if (this.ws?.readyState === WebSocket.CONNECTING) {
-      console.log('WebSocket is already connecting');
+      console.log("WebSocket is already connecting");
       return;
     }
 
-    console.log('Attempting to connect to WebSocket...');
+    console.log("Attempting to connect to WebSocket...");
     this.ws = new WebSocket(this.url);
 
     this.ws.onopen = () => {
@@ -83,7 +109,7 @@ export class WebSocketClient {
         const message = JSON.parse(
           event.data
         ) as WebSocketMessage<WebSocketEvent>;
-        console.log('Received WebSocket message:', message);
+        console.log("Received WebSocket message:", message);
         const handlers = this.eventHandlers.get(message.event);
         if (handlers) {
           handlers.forEach((handler) => handler(message.data));
@@ -97,7 +123,7 @@ export class WebSocketClient {
       console.log("WebSocket disconnected", {
         code: event.code,
         reason: event.reason,
-        wasClean: event.wasClean
+        wasClean: event.wasClean,
       });
       this.attemptReconnect();
     };
@@ -131,7 +157,7 @@ export class WebSocketClient {
       clearTimeout(this.reconnectTimeout);
     }
     if (this.ws) {
-      console.log('Disconnecting WebSocket...');
+      console.log("Disconnecting WebSocket...");
       this.ws.close();
       this.ws = null;
     }
@@ -157,35 +183,52 @@ export class WebSocketClient {
 
   send<T extends ClientEvent>(event: T, payload: ClientPayloads[T]) {
     if (!this.ws) {
-      console.error('WebSocket is not initialized');
+      console.error("WebSocket is not initialized");
       throw new Error("WebSocket is not initialized");
     }
-    
+
     if (this.ws.readyState !== WebSocket.OPEN) {
-      console.error('WebSocket is not connected', {
+      console.error("WebSocket is not connected", {
         readyState: this.ws.readyState,
         event,
-        payload
+        payload,
       });
       throw new Error("WebSocket is not connected");
     }
-    
-    console.log('Sending WebSocket message:', { event, payload });
+
+    console.log("Sending WebSocket message:", { event, payload });
     this.ws.send(JSON.stringify({ event, payload }));
   }
 
   // Chat convenience methods
   joinChat(username: string) {
-    this.send("join_chat", { username });
+    if (!this.userId) {
+      throw new Error("userId must be set before joining chat");
+    }
+    this.send("join_chat", { username, userId: this.userId });
   }
 
   sendMessage(text: string) {
-    this.send("send_message", { text });
+    if (!this.userId) {
+      throw new Error("userId must be set before sending messages");
+    }
+    this.send("send_message", { text, userId: this.userId });
+  }
+
+  clearMessages() {
+    this.send("clear_messages", {});
+  }
+
+  updateUsername(newUsername: string, targetUserId?: string) {
+    if (!this.userId) {
+      throw new Error("userId must be set before updating username");
+    }
+    this.send("update_username", { newUsername, userId: targetUserId || this.userId });
   }
 }
 
 // Create a singleton instance with the correct WebSocket URL
-const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 const wsUrl = `${wsProtocol}//${window.location.host}/ws`;
-console.log('Creating WebSocket client with URL:', wsUrl);
+console.log("Creating WebSocket client with URL:", wsUrl);
 export const wsClient = new WebSocketClient(wsUrl);

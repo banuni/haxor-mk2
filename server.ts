@@ -110,6 +110,7 @@ const server = Bun.serve({
         if (user) {
           broadcastToAll("user_left", {
             username: user.username,
+            userId: userId,
             message: `${user.username} left the chat`,
           });
           broadcastToAll("active_users", chatManager.getActiveUsers());
@@ -124,30 +125,60 @@ async function handleWebSocketMessage(ws: ServerWebSocket<any>, data: any) {
 
   switch (event) {
     case "join_chat":
-      const { username } = payload;
-      if (!username) return;
+      const { username, userId } = payload;
+      if (!username || !userId) return;
 
-      const userId = Date.now() + Math.random();
-      (ws as any).userId = userId.toString();
-      const user = chatManager.addUser(userId.toString(), username);
+      (ws as any).userId = userId;
+      const user = chatManager.addUser(userId, username);
       console.log("User joined:", user);
       // Broadcast user joined
       broadcastToAll("user_joined", {
         username,
+        userId,
         message: `${username} joined the chat`,
       });
       broadcastToAll("active_users", chatManager.getActiveUsers());
       break;
-
+    case "update_username":
+      const updateUserId = (ws as any).userId;
+      if (!updateUserId) return;
+      const { newUsername, userId: targetUserId } = payload;
+      if (!newUsername) return;
+      
+      // Only allow updating other users' names if the sender is the master
+      if (targetUserId && targetUserId !== updateUserId && updateUserId !== "master") {
+        ws.send(JSON.stringify({
+          event: "error",
+          data: { message: "Only the master can update other users' names" }
+        }));
+        return;
+      }
+      
+      const updatedUser = chatManager.updateUsername(targetUserId || updateUserId, newUsername);
+      if (updatedUser) {
+        broadcastToAll("user_updated", {
+          oldUsername: updatedUser.oldUsername,
+          newUsername: updatedUser.username,
+          userId: targetUserId || updateUserId,
+          message: `${updatedUser.oldUsername} is now known as ${updatedUser.username}`,
+        });
+        broadcastToAll("active_users", chatManager.getActiveUsers());
+      }
+      break;
     case "send_message":
-      const senderId = (ws as any).userId;
-      console.log("Sender ID:", senderId);
-      if (!senderId) return;
-      console.log("Saving message:", payload.text);
-      const message = await chatManager.addMessage(senderId, payload.text);
+      const messageUserId = (ws as any).userId;
+      if (!messageUserId) return;
+      const message = await chatManager.addMessage(messageUserId, payload.text);
       if (message) {
         broadcastToAll("new_message", message);
       }
+      break;
+    case "clear_messages":
+      await chatManager.clearMessages();
+      broadcastToAll("messages_cleared", {
+        message: "Messages cleared",
+        messages: [],
+      });
       break;
   }
 }

@@ -11,18 +11,21 @@ interface UseChatReturn {
   messages: Message[];
   activeUsers: ChatUser[];
   sendMessage: (text: string) => void;
+  updateUsername: (username: string, targetUserId?: string) => void;
   joinChat: (username: string) => void;
+  clearMessages: () => void;
   isConnected: boolean;
   error: string | null;
 }
 
-export function useChat(): UseChatReturn {
+export function useChat(userId: string): UseChatReturn {
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeUsers, setActiveUsers] = useState<ChatUser[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { on, sendMessage, joinChat } = useWebSocket();
+  const { on, sendMessage, joinChat, clearMessages, updateUsername } =
+    useWebSocket(userId);
 
   // Handle initial connection and data
   useEffect(() => {
@@ -60,19 +63,33 @@ export function useChat(): UseChatReturn {
     const unsubUserJoined = on("user_joined", (data) => {
       setActiveUsers((prev) => [
         ...prev,
-        { id: data.username, username: data.username },
+        { id: data.userId, username: data.username },
       ]);
     });
 
     const unsubUserLeft = on("user_left", (data) => {
+      setActiveUsers((prev) => prev.filter((user) => user.id !== data.userId));
+    });
+
+    const unsubUserUpdated = on("user_updated", (data) => {
       setActiveUsers((prev) =>
-        prev.filter((user) => user.username !== data.username)
+        prev.map((user) =>
+          user.id === data.userId
+            ? { ...user, username: data.newUsername }
+            : user
+        )
       );
     });
 
+    const unsubMessagesCleared = on("messages_cleared", (data) => {
+      setMessages(data.messages);
+    });
+
     return () => {
+      unsubMessagesCleared();
       unsubUserJoined();
       unsubUserLeft();
+      unsubUserUpdated();
     };
   }, [on]);
 
@@ -100,6 +117,10 @@ export function useChat(): UseChatReturn {
     sendMessage: handleSendMessage,
     joinChat: handleJoinChat,
     isConnected,
+    clearMessages,
     error,
+    updateUsername: (username: string, targetUserId?: string) => {
+      updateUsername(username, targetUserId);
+    },
   };
 }

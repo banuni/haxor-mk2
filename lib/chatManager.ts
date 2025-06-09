@@ -39,6 +39,18 @@ class ChatManager {
     return Array.from(this.activeUsers.values());
   }
 
+  updateUsername(userId: string, newUsername: string): { username: string; oldUsername: string } | null {
+    const user = this.activeUsers.get(userId);
+    if (!user) return null;
+
+    const oldUsername = user.username;
+    user.username = newUsername;
+    this.activeUsers.set(userId, user);
+    
+    console.log(`👤 User renamed: ${oldUsername} -> ${newUsername}`);
+    return { username: newUsername, oldUsername };
+  }
+
   async addMessage(userId: string, content: string): Promise<Message | null> {
     const user = this.activeUsers.get(userId);
     if (!user) return null;
@@ -61,6 +73,7 @@ class ChatManager {
     return await db
       .select()
       .from(messages)
+      .where(isNull(messages.clearedAt))
       .orderBy(messages.createdAt)
       .limit(limit);
   }

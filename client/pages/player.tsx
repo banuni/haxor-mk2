@@ -6,11 +6,15 @@ import { StealthButton } from "../components/StealthButton";
 import { useChat } from "../lib/useChat";
 import { Button } from "@/components/ui/button";
 
+const userId = "player";
+
 export const PlayerPage = () => {
-  const { messages, sendMessage, joinChat, isConnected } = useChat();
+  const { messages, sendMessage, joinChat, isConnected, activeUsers } =
+    useChat(userId);
   const { tasks } = useTasksList({ showAborted: false });
   const createTask = useCreateTask();
-  const username = "Player"; // TODO: Replace with actual user data
+  const username =
+    activeUsers.find((user) => user.id === userId)?.username || "User";
   const systemLevel = "basic"; // TODO: Replace with actual system level
   const targetInputRef = useRef<HTMLInputElement>(null);
   const goalInputRef = useRef<HTMLInputElement>(null);
@@ -20,8 +24,10 @@ export const PlayerPage = () => {
 
   useEffect(() => {
     // Join chat when component mounts
-    isConnected && joinChat(username);
-  }, [joinChat, username, isConnected]);
+    if (isConnected && !activeUsers.some((user) => user.id === userId)) {
+      joinChat(username);
+    }
+  }, [joinChat, username, isConnected, activeUsers]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (
@@ -149,7 +155,7 @@ export const PlayerPage = () => {
       </div>
       {tasks && (
         <div className="grow bg-stone-800">
-          <TasksPanel tasks={tasks} username={username} />
+          <TasksPanel tasks={tasks} username={username} userId={userId} />
         </div>
       )}
     </div>

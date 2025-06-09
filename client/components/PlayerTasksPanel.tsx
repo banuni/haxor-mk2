@@ -5,9 +5,9 @@ import { type Task } from "db/schema";
 import { differenceInSeconds } from "date-fns";
 import { useState, useEffect } from "react";
 
-function TaskCard({ task }: { task: Task }) {
+function TaskCard({ task, userId }: { task: Task; userId: string }) {
   const { startTask, abortTask } = useTaskActions();
-  const { sendMessage } = useChat();
+  const { sendMessage } = useChat(userId);
   const {
     targetName,
     algorithmName,
@@ -70,9 +70,11 @@ function TaskCard({ task }: { task: Task }) {
 export function TasksPanel({
   tasks,
   username,
+  userId,
 }: {
   tasks: Task[];
   username: string;
+  userId: string;
 }) {
   return (
     <div className="bg-stone-800 w-auto p-2">
@@ -80,7 +82,7 @@ export function TasksPanel({
       <div className="flex flex-col gap-2">
         {tasks.map((task) => (
           <div key={task.id} className="flex gap-2">
-            <TaskCard task={task} />
+            <TaskCard task={task} userId={userId} />
           </div>
         ))}
       </div>
